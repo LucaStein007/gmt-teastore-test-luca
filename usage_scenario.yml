@@ -1,31 +1,44 @@
-name: TeaStore Measurement on GMT Cluster
+name: TeaStore Measurement on GMT Cluster Final # Name leicht geändert zur Nachverfolgung
 author: Luca
 description: Deploys TeaStore via its docker-compose_default.yaml, and runs a load test using hey.
-ignore-unsupported-compose: true
+ignore-unsupported-compose: true # <--- WICHTIG: HINZUGEFÜGT gemäß Fehlermeldung
 
 services:
   compose-manager:
     image: docker/compose:latest 
   load-generator:
-    image: demisto/rakyll-hey:1.0.0.108484
+    image: demisto/rakyll-hey:1.0.0.108484 # Das korrekte Image mit Tag
 
 flow:
   - name: Start TeaStore Services via Docker Compose
     container: compose-manager
-    working_dir: "." # Da die usage_scenario.yml im Root des TeaStore-Repos liegt
+    # working_dir: "."  # <--- ENTFERNT oder AUSKOMMENTIERT gemäß Fehlermeldung
     commands:
       - type: console
+        # Der Befehl wird im Root des geklonten Repos ausgeführt, wo sich auch das 'examples'-Verzeichnis befindet.
         command: "docker-compose -f ./examples/docker/docker-compose_default.yaml up -d"
         note: "Starting TeaStore Docker Compose services."
       - type: console
-        command: "sleep 120" # Dem TeaStore Zeit geben, um vollständig zu starten
+        command: "sleep 120" # Ausreichend Zeit geben, bis alle Dienste oben sind
         note: "Waiting 120 seconds for TeaStore services to initialize."
+
+  # Optionaler Schritt zur DB-Initialisierung (für ersten Test ggf. auskommentiert lassen)
+  # - name: Initialize TeaStore Database (Example)
+  #   container: compose-manager # Oder ein curlimages/curl Service
+  #   commands:
+  #     - type: console
+  #       command: "echo 'Attempting DB init; actual command TBD or assuming auto-init'" 
+  #       note: "Attempting to initialize/reset TeaStore database."
+  #     - type: console
+  #       command: "sleep 15"
+  #       note: "Waiting after DB init attempt."
 
   - name: Run Load Test on TeaStore Homepage
     container: load-generator
     commands:
       - type: console
-        # Der Service-Name 'webui' sollte in der TeaStore docker-compose_default.yaml definiert sein
+        # 'webui' sollte der Service-Name des TeaStore WebUI-Containers sein,
+        # wie er in der docker-compose_default.yaml von TeaStore definiert ist.
         command: "hey -z 60s -c 20 http://webui:8080/tools.descartes.teastore.webui/"
         note: "Starting 60s load test with 20 concurrent users on TeaStore homepage."
 
@@ -38,7 +51,7 @@ flow:
 
   - name: Stop TeaStore Services
     container: compose-manager
-    working_dir: "."
+    # working_dir: "." # <--- ENTFERNT oder AUSKOMMENTIERT
     commands:
       - type: console
         command: "docker-compose -f ./examples/docker/docker-compose_default.yaml down -v"
