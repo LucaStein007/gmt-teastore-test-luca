@@ -1,6 +1,7 @@
 name: TeaStore Measurement on GMT Cluster
 author: Luca
 description: Deploys TeaStore via its docker-compose_default.yaml, and runs a load test using hey.
+ignore-unsupported-compose: true
 
 services:
   compose-manager:
